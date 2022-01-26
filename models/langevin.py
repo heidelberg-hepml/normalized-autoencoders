@@ -72,7 +72,7 @@ def sample_langevin(x, model, stepsize, n_steps, noise_scale=None, intermediate_
 
 def sample_langevin_v2(x, model, stepsize, n_steps, noise_scale=None, intermediate_samples=False,
                     clip_x=None, clip_grad=None, reject_boundary=False, noise_anneal=None,
-                    spherical=False, mh=False, temperature=None):
+                    spherical=False, mh=False, temperature=None, norm=False, cut=True):
     """Langevin Monte Carlo
     x: torch.Tensor, initial points
     model: An energy-based model. returns energy
@@ -115,7 +115,10 @@ def sample_langevin_v2(x, model, stepsize, n_steps, noise_scale=None, intermedia
                 y[reject] = x[reject]
             else:
                 y = torch.clamp(y, clip_x[0], clip_x[1])
-
+        
+        if norm:
+            y = y/y.sum(dim=(2,3)).view(-1,1,1,1)
+            
         if spherical:
             y = y / y.norm(dim=1, p=2, keepdim=True)
 
@@ -150,7 +153,9 @@ def sample_langevin_v2(x, model, stepsize, n_steps, noise_scale=None, intermedia
         l_drift.append((- stepsize * grad_E_x).detach().cpu())
         l_diffusion.append(noise.detach().cpu())
         l_samples.append(x.detach().cpu())
-
+    
+    if cut:
+        x = x[x.var(dim=(2,3))>1e-6].view(-1,1,40,40)
     return {'sample': x.detach(), 'l_samples': l_samples, 'l_dynamics': l_dynamics,
             'l_drift': l_drift, 'l_diffusion': l_diffusion, 'l_accept': l_accept}
 

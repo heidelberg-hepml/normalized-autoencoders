@@ -10,7 +10,7 @@ from loaders.leaveout_dataset import MNISTLeaveOut, CIFAR10LeaveOut
 from loaders.modified_dataset import Gray2RGB, MNIST_OOD, FashionMNIST_OOD, \
                                     CIFAR10_OOD, SVHN_OOD, Constant_OOD, \
                                     Noise_OOD, CIFAR100_OOD, CelebA_OOD, \
-                                    NotMNIST, ConstantGray_OOD, ImageNet32
+                                    NotMNIST, ConstantGray_OOD, ImageNet32, JetsIMG
 from loaders.chimera_dataset import Chimera
 from torchvision.datasets import FashionMNIST, Omniglot
 from augmentations import get_composed_augmentations
@@ -74,8 +74,8 @@ def get_dataset(data_dict, split_type=None, data_aug=None, dequant=None):
     # default tranform behavior. 
     original_data_aug = data_aug
     if data_aug is not None:
-        #data_aug = Compose([data_aug, ToTensor()])
-        data_aug = Compose([ToTensor(), data_aug])
+        data_aug = Compose([data_aug, ToTensor()])
+        #data_aug = Compose([ToTensor(), data_aug])
     else:
         data_aug = ToTensor()
 
@@ -231,6 +231,10 @@ def get_dataset(data_dict, split_type=None, data_aug=None, dequant=None):
         seed = data_dict.get('seed', 1)
         dataset = ImageNet32(data_path, split=split_type, transform=ToTensor(), seed=seed,
                              train_split_ratio=train_split_ratio)
+    elif name == 'JetsIMG':
+        seed = data_dict.get('seed', 1)
+        dataset = JetsIMG(data_path, split=split_type, seed=seed, transform=data_aug)
+        
     else:
         n_classes = data_dict["n_classes"]
         split = data_dict['split'][split_type]

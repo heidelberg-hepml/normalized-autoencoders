@@ -16,6 +16,9 @@ from augmentations.augmentations import (
         GaussianDequantize,
         UniformDequantize,
         ToGray,
+        Reweight,
+        GaussianFilter,
+        MinMaxScaler,
 )
 
 logger = logging.getLogger("ptsemseg")
@@ -31,7 +34,10 @@ key2aug = {
         'UniformDequantize': UniformDequantize,
         'togray': ToGray,
         'normalize': Normalize,
-        'totensor': ToTensor
+        'totensor': ToTensor,
+        'Reweight': Reweight,
+        'GaussianFilter': GaussianFilter,
+        'MinMaxScaler': MinMaxScaler,
         }
 
 

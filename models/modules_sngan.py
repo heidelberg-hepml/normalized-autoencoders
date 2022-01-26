@@ -272,7 +272,7 @@ class GeneratorNoBN(nn.Module):
         self.z_dim = z_dim
 
         # self.dense = nn.Linear(self.z_dim, 4 * 4 * GEN_SIZE)
-        self.dense = nn.ConvTranspose2d(z_dim, hidden_dim, 4)
+        self.dense = nn.ConvTranspose2d(z_dim, hidden_dim, 5)
         self.final = nn.Conv2d(hidden_dim, channels, 3, stride=1, padding=1)
         nn.init.xavier_uniform_(self.dense.weight.data, 1.)
         nn.init.xavier_uniform_(self.final.weight.data, 1.)

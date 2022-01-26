@@ -139,13 +139,23 @@ def mkdir_p(path):
             raise
 
 
-from sklearn.metrics import roc_auc_score
+from sklearn.metrics import roc_auc_score, roc_curve
 def roc_btw_arr(arr1, arr2):
     true_label = np.concatenate([np.ones_like(arr1),
                                  np.zeros_like(arr2)])
     score = np.concatenate([arr1, arr2])
     return roc_auc_score(true_label, score)
 
+def closest_point(arr, tpr_p=0.3):
+    dist = ((arr-tpr_p)**2)
+    return np.argmin(dist)
+
+def signal_eff(arr1, arr2):
+    true_label = np.concatenate([np.ones_like(arr1),
+                                 np.zeros_like(arr2)])
+    score = np.concatenate([arr1, arr2])
+    fpr, tpr, th = roc_curve(true_label, score)
+    return 1/fpr[closest_point(tpr)]     
 
 def batch_run(m, dl, device, flatten=False, method='predict', input_type='first', no_grad=True, **kwargs):
     """

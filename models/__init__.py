@@ -21,6 +21,12 @@ from models.modules import (
     IGEBMEncoder,
     ConvNet64,
     DeConvNet64,
+    ConvVAE,
+    DeConvVAE,
+    ConvNet2D,
+    DeConvNet2D,
+    ModConvVAE,
+    ModDeConvVAE,
 )
 from models.modules_sngan import Generator as SNGANGeneratorBN
 from models.modules_sngan import GeneratorNoBN as SNGANGeneratorNoBN
@@ -48,6 +54,92 @@ def get_net(in_dim, out_dim, **kwargs):
         net = DeConvNet2(
             in_chan=in_dim, out_chan=out_dim, nh=nh, out_activation=out_activation
         )
+    elif kwargs["arch"] == "convae":
+        activation = kwargs["activation"]
+        use_spectral_norm = kwargs["spectral_norm"]
+        use_dropout = kwargs["dropout"]
+        use_bnorm = kwargs["batch_norm"]
+        bias = kwargs["bias"]
+        net = ConvVAE(
+            in_chan = in_dim,
+            nh_bln = out_dim,
+            nh = nh,
+            out_activation = out_activation,
+            activation = activation,
+            use_spectral_norm = use_spectral_norm,
+            use_dropout = use_dropout,
+            use_bnorm = use_bnorm,
+            bias = bias
+        )
+    elif kwargs["arch"] == "modconvae":
+        activation = kwargs["activation"]
+        use_spectral_norm = kwargs["spectral_norm"]
+        use_bnorm = kwargs["batch_norm"]
+        bias = kwargs["bias"]
+        net = ModConvVAE(
+            in_chan = in_dim,
+            nh_bln = out_dim,
+            nh = nh,
+            out_activation = out_activation,
+            activation = activation,
+            bias = bias,
+            use_bnorm = use_bnorm,
+            use_spectral_norm = use_spectral_norm
+        )
+    elif kwargs["arch"] == "convae2":
+        activation = kwargs["activation"]
+        use_spectral_norm = kwargs["spectral_norm"]
+        net = ConvNet2D(
+            in_chan = in_dim,
+            nh_bln = out_dim,
+            nh = nh,
+            out_activation = out_activation,
+            activation = activation,
+            use_spectral_norm = use_spectral_norm
+        )
+    elif kwargs["arch"] == "deconvae":
+        activation = kwargs["activation"]
+        use_spectral_norm = kwargs["spectral_norm"]
+        use_dropout = kwargs["dropout"]
+        use_bnorm = kwargs["batch_norm"]
+        bias = kwargs["bias"]
+        net = DeConvVAE(
+                nh_bln = in_dim,
+                out_chan = out_dim,
+                nh = nh,
+                out_activation = out_activation,
+                activation = activation,
+                use_spectral_norm = use_spectral_norm,
+                use_dropout = use_dropout,
+                use_bnorm = use_bnorm,
+                bias = bias,
+        )
+    elif kwargs["arch"] == "moddeconvae":
+        activation = kwargs["activation"]
+        use_spectral_norm = kwargs["spectral_norm"]
+        use_bnorm = kwargs["batch_norm"]
+        bias = kwargs["bias"]
+        net = ModDeConvVAE(
+                nh_bln = in_dim,
+                out_chan = out_dim,
+                nh = nh,
+                out_activation = out_activation,
+                activation = activation,
+                bias = bias,
+                use_bnorm = use_bnorm,
+                use_spectral_norm = use_spectral_norm
+        )
+    elif kwargs["arch"] == "deconvae2":
+        activation = kwargs["activation"]
+        use_spectral_norm = kwargs["spectral_norm"]
+        net = DeConvNet2D(
+                nh_bln = in_dim,
+                out_chan = out_dim,
+                nh = nh,
+                out_activation = out_activation,
+                activation = activation,
+                use_spectral_norm = use_spectral_norm
+        )
     elif kwargs["arch"] == "conv64":
         num_groups = kwargs.get("num_groups", None)
         use_bn = kwargs.get("use_bn", False)
@@ -73,12 +165,16 @@ def get_net(in_dim, out_dim, **kwargs):
     elif kwargs["arch"] == "fc":
         l_hidden = kwargs["l_hidden"]
         activation = kwargs["activation"]
+        enc_dec = kwargs["enc_dec"]
+        use_dropout = kwargs["dropout"]
         net = FCNet(
             in_dim=in_dim,
             out_dim=out_dim,
             l_hidden=l_hidden,
             activation=activation,
             out_activation=out_activation,
+            enc_dec=enc_dec,
+            use_dropout=use_dropout
         )
     elif kwargs["arch"] == "convmlp":
         l_hidden = kwargs["l_hidden"]
