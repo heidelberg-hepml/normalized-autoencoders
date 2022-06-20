@@ -255,7 +255,6 @@ class SVHN_OOD(SVHN):
             self.data = self.data[shuffle_idx][65930:]
             self.labels = self.labels[shuffle_idx][65930:]
 
-
 class Constant_OOD(Dataset):
     def __init__(self, root, split='training', size=(32, 32), transform=None, channel=3):
         super(Constant_OOD, self).__init__()

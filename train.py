@@ -53,8 +53,8 @@ def run(cfg, writer):
         optimizer, sch = get_optimizer(cfg["training"]["optimizer"], model.parameters())
 
     model, train_result = trainer.train(model, optimizer, d_dataloaders, logger=logger,
-                                   logdir=writer.file_writer.get_logdir(), scheduler=sch,
-                                   clip_grad=cfg['training'].get('clip_grad', None))
+                                logdir=writer.file_writer.get_logdir(), scheduler=sch,
+                                clip_grad=cfg['training'].get('clip_grad', None))
 
 
 

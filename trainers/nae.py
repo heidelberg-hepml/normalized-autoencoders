@@ -12,6 +12,7 @@ from torchvision.utils import make_grid, save_image
 from utils import roc_btw_arr
 
 
+
 class NAETrainer(BaseTrainer):
     def train(self, model, opt, d_dataloaders, logger=None, logdir='', scheduler=None, clip_grad=None):
         cfg = self.cfg
@@ -39,7 +40,7 @@ class NAETrainer(BaseTrainer):
         elif cfg.get('small_D_lr', False):
             print('small decoder learning rate')
             nae_opt = Adam([{'params': model.encoder.parameters(), 'lr': cfg.nae_lr},
-                             {'params': model.decoder.parameters(), 'lr': cfg.nae_lr / 10}])
+                            {'params': model.decoder.parameters(), 'lr': cfg.nae_lr / 10}])
         else:
             l_params = [{'params': list(model.encoder.parameters()) + list(model.decoder.parameters())}]
             if model.temperature_trainable:
@@ -203,9 +204,9 @@ class NAELogger(BaseLogger):
         writer.add_image('nae/sample_recon', img_grid, i)
 
         # to uint8 and save as array
-        x_neg = (x_neg.permute(0,2,3,1).numpy() * 256.).clip(0, 255).astype('uint8')
-        recon_neg = (recon_neg.permute(0,2,3,1).numpy() * 256.).clip(0, 255).astype('uint8')
-        # save_image(img_grid, f'{writer.file_writer.get_logdir()}/nae_sample_{i}.png')
+        x_neg = x_neg.numpy()
+        recon_neg = recon_neg.numpy()
+        #save_image(img_grid, f'{writer.file_writer.get_logdir()}/nae_sample_{i}.png')
         np.save(f'{writer.file_writer.get_logdir()}/nae_neg_{i}.npy', x_neg)
         np.save(f'{writer.file_writer.get_logdir()}/nae_neg_recon_{i}.npy', recon_neg)
 

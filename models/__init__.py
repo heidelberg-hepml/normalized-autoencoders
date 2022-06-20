@@ -27,6 +27,7 @@ from models.modules import (
     DeConvNet2D,
     ModConvVAE,
     ModDeConvVAE,
+    IDMDHAE,
 )
 from models.modules_sngan import Generator as SNGANGeneratorBN
 from models.modules_sngan import GeneratorNoBN as SNGANGeneratorNoBN
@@ -49,6 +50,8 @@ def get_net(in_dim, out_dim, **kwargs):
             nh_mlp=nh_mlp,
             out_activation=out_activation,
         )
+    elif kwargs["arch"] == "IDMDHAE":
+        net = IDMDHAE(input_dim=28, latent_dim=out_dim, en_hidden_dim=100, en_hidden_layers=3)
 
     elif kwargs["arch"] == "deconv2":
         net = DeConvNet2(

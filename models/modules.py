@@ -11,6 +11,73 @@ from models.spectral_norm import spectral_norm
 from models import igebm
 
 
+from torch.nn import Linear, LeakyReLU, ModuleList, Module
+from torch.cuda import is_available as gpu_is_available
+
+
+class IDMDHAE(Module):
+    '''
+    Simple class to definde VAE by setting dimensions for encoder and decoder. 
+    Both will have layers with same size.
+    If not specified, decoder will mirror the encoder.
+    '''
+    def __init__(self, input_dim, en_hidden_dim, en_hidden_layers, latent_dim, de_hidden_dim = None, de_hidden_layers = None, DEVICE = None):
+        super(AE, self).__init__()
+        # detect if working on gpu
+        if not DEVICE != DEVICE:
+            self.DEVICE = DEVICE
+        else:
+            self.DEVICE = "cuda" if gpu_is_available() else "cpu"
+        # save parameter for easier reference
+        self.input_dim = input_dim
+        self.en_hidden_dim = en_hidden_dim
+        self.en_hidden_layers = en_hidden_layers
+        self.latent_dim = latent_dim
+        self.de_hidden_dim = de_hidden_dim
+        self.de_hidden_layers = de_hidden_layers
+
+        self.make_network()
+      
+        #activation function:
+        self.LeakyReLU = LeakyReLU(0.2).to(self.DEVICE)
+
+    def make_coder(self, input, layers, dim, output):
+        layers_list = ModuleList([])
+        layers_list.append(Linear(input, dim).to(self.DEVICE))
+        for i in range(layers): 
+           layers_list.append(Linear(dim, dim).to(self.DEVICE))
+        layers_list.append(Linear(dim, output).to(self.DEVICE))
+        return layers_list
+
+    def make_network(self):
+        self.encoder_layers = self.make_coder(self.input_dim, self.en_hidden_layers, self.en_hidden_dim, self.en_hidden_dim)
+        self.latent_layer = Linear(self.en_hidden_dim, self.latent_dim).to(self.DEVICE)
+        if self.de_hidden_dim == None and self.de_hidden_layers == None:
+            self.de_hidden_dim = self.en_hidden_dim
+            self.de_hidden_layers = self.en_hidden_layers
+        self.decoder_layers = self.make_coder(self.latent_dim, self.de_hidden_layers, self.de_hidden_dim, self.input_dim)
+    
+    def forward_encoder(self,x):
+        h = self.LeakyReLU(self.encoder_layers[0](x))
+        for l in self.encoder_layers[1:]:
+            h = self.LeakyReLU(l(h))
+        latent = self.latent_layer(h)
+        return latent
+                
+    def forward_decoder(self, x):
+        h = self.LeakyReLU(self.decoder_layers[0](x))
+        for l in self.decoder_layers[1:-1]:
+            h = self.LeakyReLU(l(h))
+        h = self.decoder_layers[-1](h)
+        return h
+
+    def forward(self, x):
+        latent = self.forward_encoder(x)
+        x_hat = self.forward_decoder(latent)
+        return x_hat#, {"latent": latent}
+
+
+
 class DummyDistribution(nn.Module):
     """ Function-less class introduced for backward-compatibility of model checkpoint files. """
     def __init__(self, net):
@@ -459,6 +526,7 @@ class FCNet(nn.Module):
             if act_fn is not None:
                 l_layer.append(act_fn)
             prev_dim = n_hidden
+        if use_dropout:
             l_layer.append(nn.Dropout(p=0.1))
         
         if not enc_dec:
