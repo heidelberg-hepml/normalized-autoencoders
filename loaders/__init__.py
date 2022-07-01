@@ -11,6 +11,7 @@ from loaders.modified_dataset import Gray2RGB, MNIST_OOD, FashionMNIST_OOD, \
                                     CIFAR10_OOD, SVHN_OOD, Constant_OOD, \
                                     Noise_OOD, CIFAR100_OOD, CelebA_OOD, \
                                     NotMNIST, ConstantGray_OOD, ImageNet32, JetsIMG
+from loaders.IDMDHDataset import IDMDHDataset
 from loaders.chimera_dataset import Chimera
 from torchvision.datasets import FashionMNIST, Omniglot
 from augmentations import get_composed_augmentations
@@ -235,17 +236,16 @@ def get_dataset(data_dict, split_type=None, data_aug=None, dequant=None):
         seed = data_dict.get('seed', 1)
         dataset = JetsIMG(data_path, split=split_type, seed=seed, transform=data_aug)
     elif name == "IDMDH":
-        
-        from ADIDMDH.Dataset import IDMDHDataset
-        from ADIDMDH.Transformer import Transformer
-        from ADIDMDH.Models_dict import available_transformer_dicts, column_names_IDs
         import pandas as pd
+        from itertools import product
+        def missing_energy_features():
+            return [f"missing_{p}" for p in ["px", "py", "pz", "E"]]
+
+        def column_names_IDs():
+            return [f"daughter_{i}_daughter_{j}_{p}" for p in ["px", "py", "pz", "E"] for i,j in product([0,1],[0,1])] + missing_energy_features()
         
         bkg_df = pd.read_csv("/ceph/jeppelt/idmdh_data.csv")
-        transformer_dict = available_transformer_dicts["feature_standard_scaler"]
-        transformer = Transformer(transformer_dict = transformer_dict, path = f"/ceph/jeppelt/exports/DVAE/feature_standard_scaler")
-        train_data = transformer.use(bkg_df)
-        dataset = IDMDHDataset(train_data, column_names_IDs())
+        dataset = IDMDHDataset(bkg_df, column_names_IDs())
 
     else:
         n_classes = data_dict["n_classes"]
