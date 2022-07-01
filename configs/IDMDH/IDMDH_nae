@@ -28,12 +28,12 @@ model:
         sampling: on_manifold
 
         z_step: 20
-        z_stepsize: 100 
+        z_stepsize: 1 
         z_noise_std: 0.02
         z_noise_anneal: Null 
         z_clip_langevin_grad: Null
         x_step: 40
-        x_stepsize: 100
+        x_stepsize: 1
         x_noise_std: 0.02
         x_noise_anneal: 1
         x_clip_langevin_grad: 0.01
@@ -51,13 +51,13 @@ model:
         temperature: 1.
         temperature_trainable: False
 
-    x_dim: 28
+    x_dim: 20
     z_dim: 3
 data:
     indist_train:
         dataset: IDMDH 
         path: /ceph/jeppelt/idmdh_data.csv
-        batch_size: 1000
+        batch_size: 128
         n_workers: 8
         split: training 
         shuffle: True
@@ -69,14 +69,14 @@ data:
     indist_val:
         dataset: IDMDH 
         path: /ceph/jeppelt/idmdh_data.csv
-        batch_size: 1000
+        batch_size: 128
         n_workers: 8
         split: validation 
         size: 64
     ood_val:
         dataset: IDMDH 
         path: /ceph/jeppelt/idmdh_data.csv
-        batch_size: 1000
+        batch_size: 128
         n_workers: 8
         split: validation 
         size: 64
@@ -84,13 +84,13 @@ data:
         dataset: IDMDH 
         size: 64
         path: /ceph/jeppelt/idmdh_data.csv
-        batch_size: 1000
+        batch_size: 128
         n_workers: 8
         split: validation
 training:
     #load_ae: /ceph/jeppelt/exports/NAE/IDMDH_nae/run/model_best.pkl
-    ae_epoch: 25
-    nae_epoch: 50
+    ae_epoch: 500
+    nae_epoch: 1000
     lr_schedule: null
         # name: on_plateau
         # factor: 0.5
