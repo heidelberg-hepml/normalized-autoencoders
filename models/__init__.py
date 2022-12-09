@@ -6,21 +6,12 @@ import torchvision.models as models
 import torchvision.transforms as transforms
 from augmentations import get_composed_augmentations
 
-from models.ae import (
-    AE,
-    VAE,
-    DAE,
-    WAE,
-)
+from models.ae import AE
 from models.nae import NAE
 from models.modules import (
     DeConvNet2,
     FCNet,
     ConvNet2FC,
-    ConvMLP,
-    IGEBMEncoder,
-    ConvNet64,
-    DeConvNet64,
     ConvVAE,
     DeConvVAE,
     ConvNet2D,
@@ -28,12 +19,6 @@ from models.modules import (
     ModConvVAE,
     ModDeConvVAE,
 )
-from models.modules_sngan import Generator as SNGANGeneratorBN
-from models.modules_sngan import GeneratorNoBN as SNGANGeneratorNoBN
-from models.modules_sngan import GeneratorNoBN64 as SNGANGeneratorNoBN64
-from models.modules_sngan import GeneratorGN as SNGANGeneratorGN
-from models.energybased import EnergyBasedModel
-
 
 
 def get_net(in_dim, out_dim, **kwargs):
@@ -140,28 +125,6 @@ def get_net(in_dim, out_dim, **kwargs):
                 activation = activation,
                 use_spectral_norm = use_spectral_norm
         )
-    elif kwargs["arch"] == "conv64":
-        num_groups = kwargs.get("num_groups", None)
-        use_bn = kwargs.get("use_bn", False)
-        net = ConvNet64(
-            in_chan=in_dim,
-            out_chan=out_dim,
-            nh=nh,
-            out_activation=out_activation,
-            num_groups=num_groups,
-            use_bn=use_bn,
-        )
-    elif kwargs["arch"] == "deconv64":
-        num_groups = kwargs.get("num_groups", None)
-        use_bn = kwargs.get("use_bn", False)
-        net = DeConvNet64(
-            in_chan=in_dim,
-            out_chan=out_dim,
-            nh=nh,
-            out_activation=out_activation,
-            num_groups=num_groups,
-            use_bn=use_bn,
-        )
     elif kwargs["arch"] == "fc":
         l_hidden = kwargs["l_hidden"]
         activation = kwargs["activation"]
@@ -176,65 +139,6 @@ def get_net(in_dim, out_dim, **kwargs):
             enc_dec=enc_dec,
             use_dropout=use_dropout
         )
-    elif kwargs["arch"] == "convmlp":
-        l_hidden = kwargs["l_hidden"]
-        activation = kwargs["activation"]
-        net = ConvMLP(
-            in_dim=in_dim,
-            out_dim=out_dim,
-            l_hidden=l_hidden,
-            activation=activation,
-            out_activation=out_activation,
-        )
-    elif kwargs["arch"] == "IGEBMEncoder":
-        use_spectral_norm = kwargs.get("use_spectral_norm", False)
-        keepdim = kwargs.get("keepdim", True)
-        net = IGEBMEncoder(
-            in_chan=in_dim,
-            out_chan=out_dim,
-            n_class=None,
-            use_spectral_norm=use_spectral_norm,
-            keepdim=keepdim,
-        )
-    elif kwargs["arch"] == "sngan_generator_bn":
-        hidden_dim = kwargs.get("hidden_dim", 128)
-        out_activation = kwargs["out_activation"]
-        net = SNGANGeneratorBN(
-            z_dim=in_dim,
-            channels=out_dim,
-            hidden_dim=hidden_dim,
-            out_activation=out_activation,
-        )
-    elif kwargs["arch"] == "sngan_generator_nobn":
-        hidden_dim = kwargs.get("hidden_dim", 128)
-        out_activation = kwargs["out_activation"]
-        net = SNGANGeneratorNoBN(
-            z_dim=in_dim,
-            channels=out_dim,
-            hidden_dim=hidden_dim,
-            out_activation=out_activation,
-        )
-    elif kwargs["arch"] == "sngan_generator_nobn64":
-        hidden_dim = kwargs.get("hidden_dim", 128)
-        out_activation = kwargs["out_activation"]
-        net = SNGANGeneratorNoBN64(
-            z_dim=in_dim,
-            channels=out_dim,
-            hidden_dim=hidden_dim,
-            out_activation=out_activation,
-        )
-    elif kwargs["arch"] == "sngan_generator_gn":
-        hidden_dim = kwargs.get("hidden_dim", 128)
-        out_activation = kwargs["out_activation"]
-        num_groups = kwargs["num_groups"]
-        net = SNGANGeneratorGN(
-            z_dim=in_dim,
-            channels=out_dim,
-            hidden_dim=hidden_dim,
-            out_activation=out_activation,
-            num_groups=num_groups,
-        )
-
     return net
 
 
@@ -249,24 +153,7 @@ def get_ae(**model_cfg):
         encoder = get_net(in_dim=x_dim, out_dim=z_dim, **enc_cfg)
         decoder = get_net(in_dim=z_dim, out_dim=x_dim, **dec_cfg)
         ae = AE(encoder, decoder)
-    elif arch == "dae":
-        sig = model_cfg["sig"]
-        noise_type = model_cfg["noise_type"]
-        encoder = get_net(in_dim=x_dim, out_dim=z_dim, **enc_cfg)
-        decoder = get_net(in_dim=z_dim, out_dim=x_dim, **dec_cfg)
-        ae = DAE(encoder, decoder, sig=sig, noise_type=noise_type)
-    elif arch == "wae":
-        encoder = get_net(in_dim=x_dim, out_dim=z_dim, **enc_cfg)
-        decoder = get_net(in_dim=z_dim, out_dim=x_dim, **dec_cfg)
-        ae = WAE(encoder, decoder, **model_cfg)
-    elif arch == "vae":
-        sigma_trainable = model_cfg.get("sigma_trainable", False)
-        encoder = get_net(in_dim=x_dim, out_dim=z_dim * 2, **enc_cfg)
-        decoder = get_net(in_dim=z_dim, out_dim=x_dim, **dec_cfg)
-        ae = VAE(encoder, decoder, **model_cfg)
     return ae
-
-
 
 def get_vae(**model_cfg):
     x_dim = model_cfg["x_dim"]
@@ -281,18 +168,6 @@ def get_vae(**model_cfg):
     if model_cfg["arch"] == "vae":
         ae = VAE(encoder, decoder, n_sample=n_sample, pred_method=pred_method)
     return ae
-
-
-def get_ebm(**model_cfg):
-    model_cfg = copy.deepcopy(model_cfg)
-    if "arch" in model_cfg:
-        model_cfg.pop("arch")
-    in_dim = model_cfg["x_dim"]
-    model_cfg.pop("x_dim")
-    net = get_net(in_dim=in_dim, out_dim=1, **model_cfg["net"])
-    model_cfg.pop("net")
-    return EnergyBasedModel(net, **model_cfg)
-
 
 def get_nae(**model_cfg):
     arch = model_cfg.pop("arch")

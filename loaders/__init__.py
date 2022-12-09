@@ -14,7 +14,6 @@ from loaders.modified_dataset import Gray2RGB, MNIST_OOD, FashionMNIST_OOD, \
 from loaders.chimera_dataset import Chimera
 from torchvision.datasets import FashionMNIST, Omniglot
 from augmentations import get_composed_augmentations
-from augmentations.augmentations import ToGray, Invert, Fragment
 
 
 OOD_SIZE = 32  # common image size for OOD detection experiments
@@ -88,12 +87,6 @@ def get_dataset(data_dict, split_type=None, data_aug=None, dequant=None):
         l_out_class = data_dict['out_class']
         dataset = MNISTLeaveOut(data_path, l_out_class=l_out_class, split=split_type, download=True,
                                 transform=data_aug)
-    elif name == 'MNISTLeaveOutFragment':
-        l_out_class = data_dict['out_class']
-        fragment = data_dict['fragment']
-        dataset = MNISTLeaveOut(data_path, l_out_class=l_out_class, split=split_type, download=True,
-                                transform=Compose([ToTensor(),
-                                                   Fragment(fragment)]))
     elif name == 'MNIST_OOD':
         size = data_dict.get('size', 28)
         if size == 28:
@@ -147,14 +140,6 @@ def get_dataset(data_dict, split_type=None, data_aug=None, dequant=None):
         seed = data_dict.get('seed', 1)
         dataset = CIFAR10LeaveOut(data_path, l_out_class=l_out_class, split=split_type, download=True,
                               transform=data_aug, seed=seed)
-
-    elif name == 'CIFAR10_GRAY':
-        dataset = CIFAR10_OOD(data_path, split=split_type, download=True,
-                              transform=Compose([ToTensor(),
-                                                 ToGray()]))
-        dataset.img_size = (OOD_SIZE, OOD_SIZE)
-
-
     elif name == 'CIFAR100_OOD':
         dataset = CIFAR100_OOD(data_path, split=split_type, download=True,
                                transform=ToTensor())
@@ -211,21 +196,6 @@ def get_dataset(data_dict, split_type=None, data_aug=None, dequant=None):
     elif name == 'NotMNIST':
         dataset = NotMNIST(data_path, split=split_type, transform=ToTensor())
         dataset.img_size = (28, 28)
-    elif name == 'Omniglot':
-        size = data_dict.get('size', OOD_SIZE)
-        invert = data_dict.get('invert', True)  # invert pixel intensity: x -> 1 - x
-        if split_type == 'training':
-            background = True
-        else:
-            background = False
-
-        if invert:
-            tr = Compose([Resize(size), ToTensor(), Invert()])
-        else:
-            tr = Compose([Resize(size), ToTensor()])
-
-        dataset = Omniglot(data_path, background=background, download=False,
-                           transform=tr)
     elif name == 'ImageNet32':
         train_split_ratio = data_dict.get('train_split_ratio', 0.8)
         seed = data_dict.get('seed', 1)

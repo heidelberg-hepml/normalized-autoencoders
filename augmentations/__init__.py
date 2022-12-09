@@ -1,21 +1,9 @@
 import logging
-from torchvision.transforms import (
-        RandomHorizontalFlip,
-        RandomRotation,
-        RandomResizedCrop,
-        ColorJitter,
-        RandomGrayscale,
-        RandomChoice,
-        Compose,
-        Normalize,
-        ToTensor
-)
+from torchvision.transforms import ToTensor, Compose
+
 from augmentations.augmentations import (
-        RandomRotate90,
-        ColorJitterSimCLR,
         GaussianDequantize,
         UniformDequantize,
-        ToGray,
         Reweight,
         GaussianFilter,
         MinMaxScaler,
@@ -25,15 +13,8 @@ logger = logging.getLogger("ptsemseg")
 
 
 key2aug = {
-        'hflip': RandomHorizontalFlip,
-        'rotate': RandomRotate90,
-        'rcrop': RandomResizedCrop,
-        'cjitter': ColorJitterSimCLR,
-        'rgray': RandomGrayscale,
         'GaussianDequantize': GaussianDequantize,
         'UniformDequantize': UniformDequantize,
-        'togray': ToGray,
-        'normalize': Normalize,
         'totensor': ToTensor,
         'Reweight': Reweight,
         'GaussianFilter': GaussianFilter,

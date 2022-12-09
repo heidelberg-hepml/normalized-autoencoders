@@ -1,0 +1,121 @@
+data:
+  indist_train:
+    augmentations:
+      Reweight: {}
+    batch_size: 128
+    dataset: JetsIMG
+    dequant:
+      GaussianFilter: {}
+    n_workers: 8
+    path: /remote/gpu06/favaro/nae4hep/normalized-autoencoders/datasets/train.img40X40.crop.rot.flip.norm.sig.correct.h5
+    shuffle: true
+    size: 40
+    split: training
+  indist_val:
+    augmentations:
+      Reweight: {}
+    batch_size: 128
+    dataset: JetsIMG
+    dequant:
+      GaussianFilter: {}
+    n_workers: 8
+    path: /remote/gpu06/favaro/nae4hep/normalized-autoencoders/datasets/train.img40X40.crop.rot.flip.norm.sig.correct.h5
+    shuffle: false
+    size: 40
+    split: validation
+  ood_target:
+    augmentations:
+      Reweight: {}
+    batch_size: 128
+    channel: 1
+    dataset: JetsIMG
+    dequant:
+      GaussianFilter: {}
+    n_workers: 4
+    path: /remote/gpu06/favaro/nae4hep/normalized-autoencoders/datasets/train.img40X40.crop.rot.flip.norm.bkg.correct.h5
+    shuffle: false
+    size: 40
+    split: evaluation
+  ood_val:
+    augmentations:
+      Reweight: {}
+    batch_size: 128
+    channel: 1
+    dataset: JetsIMG
+    dequant:
+      GaussianFilter: {}
+    n_workers: 4
+    path: /remote/gpu06/favaro/nae4hep/normalized-autoencoders/datasets/train.img40X40.crop.rot.flip.norm.bkg.correct.h5
+    shuffle: false
+    size: 40
+    split: validation
+device: cuda:0
+id: qcd_m4
+logger: nae
+model:
+  arch: nae
+  decoder:
+    activation: PReLU
+    arch: deconvae
+    batch_norm: false
+    bias: true
+    dropout: false
+    nh: 8
+    out_activation: sigmoid
+    spectral_norm: true
+  encoder:
+    activation: PReLU
+    arch: convae
+    batch_norm: false
+    bias: true
+    dropout: false
+    nh: 8
+    nh_mlp: 1024
+    out_activation: linear
+    spectral_norm: true
+  nae:
+    buffer_size: 10000
+    gamma: 1
+    initial_dist: gaussian
+    l2_norm_reg: 1.0e-08
+    l2_norm_reg_en: 1.0e-08
+    replay: true
+    replay_ratio: 0.95
+    sampling: on_manifold
+    spherical: true
+    temperature: 1
+    temperature_trainable: false
+    x_bound:
+    - 0
+    - 1
+    x_clip_langevin_grad: 0.01
+    x_cut: false
+    x_noise_anneal: 1
+    x_noise_std: 0.0001
+    x_norm: false
+    x_step: 30
+    x_stepsize: 50
+    z_bound: null
+    z_clip_langevin_grad: 0.01
+    z_cut: false
+    z_noise_anneal: null
+    z_noise_std: 0.01
+    z_norm: false
+    z_step: 30
+    z_stepsize: 50
+  x_dim: 1
+  z_dim: 3
+seed: 1
+trainer: nae
+training:
+  ae_epoch: 80
+  ae_lr: 0.001
+  fix_D: false
+  mh: true
+  mh_z: true
+  nae_epoch: 60
+  nae_lr: 1.0e-05
+  print_interval: 200
+  save_interval: 2000
+  temperature_lr: 0.001
+  val_interval: 200

@@ -3,7 +3,7 @@ import torch
 from torch import nn
 from torchvision.utils import make_grid 
 from models.ae import AE
-from models.modules import IsotropicLaplace, DummyDistribution
+from models.modules import DummyDistribution
 from models.energybased import SampleBuffer, SampleBufferV2
 from models.langevin import sample_langevin, sample_langevin_v2
 

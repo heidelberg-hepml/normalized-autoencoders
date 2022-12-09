@@ -561,3 +561,64 @@ class JetsIMG(Dataset):
         if self.transform is not None:
             image = self.transform(image)
         return image, self.is_sign[idx]
+
+class SparseJetsIMG(Dataset):
+    def __init__(self,dataframe_path, split='training', size=40, key='table', seed=1, transform=None):
+        ##########implement sampl size selection##########
+        df = pd.read_hdf(dataframe_path, key=key)
+        
+        assert split in ('training', 'validation', 'evaluation')
+        if split == 'training':
+            df = df[:100000]
+            shuffle_idx = get_shuffled_idx(len(df), seed)
+            is_sign = df.pop('is_signal_new')
+            mass = df.pop('mass')
+            
+            self.data = df.iloc[:, :1600].to_numpy().reshape(-1, size, size, 1)[shuffle_idx]
+            self.is_sign = is_sign.to_numpy()[shuffle_idx]
+            self.mass = mass.to_numpy()[shuffle_idx]
+        
+        elif split == 'validation':
+            df = df[int(.6*len(df)):int(.8*len(df))]
+            is_sign = df.pop('is_signal_new')
+            mass = df.pop('mass')
+            self.data = df.iloc[:, :1600].to_numpy().reshape(-1,size,size,1)
+            self.is_sign = is_sign.to_numpy()
+            self.mass = mass.to_numpy()
+        
+        else:
+            df = df[int(.8*len(df)):]
+            is_sign = df.pop('is_signal_new')
+            mass = df.pop('mass')
+            self.data = df.iloc[:, :1600].to_numpy().reshape(-1,size,size,1)
+            self.is_sign = is_sign.to_numpy()
+            self.mass = mass.to_numpy()
+
+        self.data = self.data.astype('float32')
+        self.is_sign = self.is_sign.astype('float32')
+        self.mass = self.mass.astype('float32')
+        self.transform = transform
+        
+        self.t_data = []
+        for j in range(len(self.data)):
+            locations = []
+            features = []
+            for y, img_r in enumerate(self.data[j, :, :, 0]):
+                for x, img_c in enumerate(self.data[j, y, :, 0]):
+                    if self.data[j,y, x, 0]!=0:
+                        locations.append([y, x, j])
+                        features.append([self.data[j, y, x, 0]])
+
+            locations = np.array(locations)
+            features = np.array(features)
+            self.t_data.append([locations, features])
+        #self.t_data = np.array(self.t_data)
+
+    def __len__(self):
+        return len(self.data)
+    
+    def __getitem__(self, idx):
+        image = self.data[idx]
+        if self.transform is not None:
+            image = self.transform(image)
+        return image, self.is_sign[idx]
