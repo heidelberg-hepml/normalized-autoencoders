@@ -1,10 +1,9 @@
-
+import time
 import os
 import random
 import argparse
 from omegaconf import OmegaConf
 import numpy as np
-from itertools import cycle
 import torch
 from models import get_model
 from trainers import get_trainer, get_logger
@@ -19,6 +18,8 @@ def run(cfg, writer):
     """main training function"""
     # Setup seeds
     seed = cfg.get('seed', 1)
+    if seed == 1:
+        seed = int(time.time())
     print(f'running with random seed : {seed}')
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)

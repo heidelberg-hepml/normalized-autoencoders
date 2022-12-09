@@ -1,7 +1,6 @@
 data:
   indist_train:
     augmentations:
-      Reweight: {}
     batch_size: 128
     dataset: JetsIMG
     dequant:
@@ -13,7 +12,6 @@ data:
     split: training
   indist_val:
     augmentations:
-      Reweight: {}
     batch_size: 128
     dataset: JetsIMG
     dequant:
@@ -25,7 +23,6 @@ data:
     split: validation
   ood_target:
     augmentations:
-      Reweight: {}
     batch_size: 128
     channel: 1
     dataset: JetsIMG
@@ -38,7 +35,6 @@ data:
     split: evaluation
   ood_val:
     augmentations:
-      Reweight: {}
     batch_size: 128
     channel: 1
     dataset: JetsIMG

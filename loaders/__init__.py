@@ -1,31 +1,16 @@
 import numpy as np
 import copy
-import json
 import torch
 from torch.utils import data
-from torchvision.transforms import ToTensor, Compose, Resize, CenterCrop,\
-                                   Pad, Normalize
+from torchvision.transforms import ToTensor, Compose
 
-from loaders.leaveout_dataset import MNISTLeaveOut, CIFAR10LeaveOut
-from loaders.modified_dataset import Gray2RGB, MNIST_OOD, FashionMNIST_OOD, \
-                                    CIFAR10_OOD, SVHN_OOD, Constant_OOD, \
-                                    Noise_OOD, CIFAR100_OOD, CelebA_OOD, \
-                                    NotMNIST, ConstantGray_OOD, ImageNet32, JetsIMG
-from loaders.chimera_dataset import Chimera
-from torchvision.datasets import FashionMNIST, Omniglot
+from loaders.hep_dataset import JetsIMG
+
 from augmentations import get_composed_augmentations
-
-
-OOD_SIZE = 32  # common image size for OOD detection experiments
-
 
 def get_dataloader(data_dict, mode=None, mode_dict=None, data_aug=None):
     """constructs DataLoader
     data_dict: data part of cfg
-
-    mode: deprecated argument
-    mode_dict: deprecated argument
-    data_aug: deprecated argument
 
     Example data_dict
         dataset: FashionMNISTpad_OOD
@@ -83,164 +68,14 @@ def get_dataset(data_dict, split_type=None, data_aug=None, dequant=None):
 
 
     # datasets
-    if name == 'MNISTLeaveOut':
-        l_out_class = data_dict['out_class']
-        dataset = MNISTLeaveOut(data_path, l_out_class=l_out_class, split=split_type, download=True,
-                                transform=data_aug)
-    elif name == 'MNIST_OOD':
-        size = data_dict.get('size', 28)
-        if size == 28:
-            l_transform = [ToTensor()]
-        else:
-            l_transform = [Gray2RGB(), Resize(OOD_SIZE), ToTensor()]
-        dataset = MNIST_OOD(data_path, split=split_type, download=True,
-                            transform=Compose(l_transform))
-        dataset.img_size = (size, size)
-
-    elif name == 'MNISTpad_OOD':
-        dataset = MNIST_OOD(data_path, split=split_type, download=True,
-                            transform=Compose([Gray2RGB(),
-                                               Pad(2),
-                                               ToTensor()]))
-        dataset.img_size = (OOD_SIZE, OOD_SIZE)
-
-    elif name == 'FashionMNIST_OOD':
-        size = data_dict.get('size', 28)
-        if size == 28:
-            l_transform = [ToTensor()]
-        else:
-            l_transform = [Gray2RGB(), Resize(OOD_SIZE), ToTensor()]
-
-        dataset = FashionMNIST_OOD(data_path, split=split_type, download=True,
-                            transform=Compose(l_transform))
-        dataset.img_size = (size, size)
-
-    elif name == 'FashionMNISTpad_OOD':
-        dataset = FashionMNIST_OOD(data_path, split=split_type, download=True,
-                            transform=Compose([Gray2RGB(),
-                                               Pad(2),
-                                               ToTensor()]))
-        dataset.img_size = (OOD_SIZE, OOD_SIZE)
-
-    elif name == 'HalfMNIST':
-        mnist = MNIST_OOD(data_path, split=split_type, download=True,
-                            transform=ToTensor())
-        dataset = Chimera(mnist, mode='horizontal_blank')
-    elif name == 'ChimeraMNIST':
-        mnist = MNIST_OOD(data_path, split=split_type, download=True,
-                            transform=ToTensor())
-        dataset = Chimera(mnist, mode='horizontal')
-    elif name == 'CIFAR10_OOD':
-        dataset = CIFAR10_OOD(data_path, split=split_type, download=True,
-                              transform=data_aug)
-        dataset.img_size = (OOD_SIZE, OOD_SIZE)
-
-    elif name == 'CIFAR10LeaveOut':
-        l_out_class = data_dict['out_class']
-        seed = data_dict.get('seed', 1)
-        dataset = CIFAR10LeaveOut(data_path, l_out_class=l_out_class, split=split_type, download=True,
-                              transform=data_aug, seed=seed)
-    elif name == 'CIFAR100_OOD':
-        dataset = CIFAR100_OOD(data_path, split=split_type, download=True,
-                               transform=ToTensor())
-        dataset.img_size = (OOD_SIZE, OOD_SIZE)
-
-    elif name == 'SVHN_OOD':
-        dataset = SVHN_OOD(data_path, split=split_type, download=True,
-                           transform=data_aug)
-        dataset.img_size = (OOD_SIZE, OOD_SIZE)
-
-    elif name == 'Constant_OOD':
-        size = data_dict.get('size', OOD_SIZE)
-        channel = data_dict.get('channel', 3)
-        dataset = Constant_OOD(data_path, split=split_type, size=(size, size),
-                               channel=channel,
-                               transform=ToTensor())
-
-    elif name == 'ConstantGray_OOD':
-        size = data_dict.get('size', OOD_SIZE)
-        channel = data_dict.get('channel', 3)
-        dataset = ConstantGray_OOD(data_path, split=split_type, size=(size, size),
-                               channel=channel,
-                               transform=ToTensor())
-
-    elif name == 'Noise_OOD':
-        channel = data_dict.get('channel', 3)
-        size = data_dict.get('size', OOD_SIZE)
-        dataset = Noise_OOD(data_path, split=split_type,
-                            transform=ToTensor(), channel=channel, size=(size, size))
-
-    elif name == 'CelebA_OOD':
-        size = data_dict.get('size', OOD_SIZE)
-        l_aug = []
-        l_aug.append(CenterCrop(140))
-        l_aug.append(Resize(size))
-        if original_data_aug is not None:
-            l_aug.append(original_data_aug)
-        l_aug.append(ToTensor())
-        if dequant is not None:
-            l_aug.append(dequant)
-        data_aug = Compose(l_aug)
-        dataset = CelebA_OOD(data_path, split=split_type,
-                             transform=data_aug)
-        dataset.img_size = (OOD_SIZE, OOD_SIZE)
-
-    elif name == 'FashionMNIST':   # normal FashionMNIS
-        dataset = FashionMNIST_OOD(data_path, split=split_type, download=True,
-                                   transform=ToTensor())
-        dataset.img_size = (28, 28)
-    elif name == 'MNIST':   # normal  MNIST
-        dataset = MNIST_OOD(data_path, split=split_type, download=True,
-                            transform=ToTensor())
-        dataset.img_size = (28, 28)
-    elif name == 'NotMNIST':
-        dataset = NotMNIST(data_path, split=split_type, transform=ToTensor())
-        dataset.img_size = (28, 28)
-    elif name == 'ImageNet32':
-        train_split_ratio = data_dict.get('train_split_ratio', 0.8)
-        seed = data_dict.get('seed', 1)
-        dataset = ImageNet32(data_path, split=split_type, transform=ToTensor(), seed=seed,
-                             train_split_ratio=train_split_ratio)
-    elif name == 'JetsIMG':
+    if name == 'JetsIMG':
         seed = data_dict.get('seed', 1)
         dataset = JetsIMG(data_path, split=split_type, seed=seed, transform=data_aug)
         
     else:
-        n_classes = data_dict["n_classes"]
-        split = data_dict['split'][split_type]
-
-        param_dict = copy.deepcopy(data_dict)
-        param_dict.pop("dataset")
-        param_dict.pop("path")
-        param_dict.pop("n_classes")
-        param_dict.pop("split")
-        param_dict.update({"split_type": split_type})
-
-
-        dataset_instance = _get_dataset_instance(name)
-        dataset = dataset_instance(
-            data_path,
-            n_classes,
-            split=split,
-            augmentations=data_aug,
-            is_transform=True,
-            **param_dict,
-        )
+        raise NameError("Dataset not defined")
 
     return dataset
-
-
-def _get_dataset_instance(name):
-    """get_loader
-
-    :param name:
-    """
-    return {
-        "basic": basic_dataset,
-        "inmemory": InMemoryDataset,
-    }[name]
-
-
 
 def np_to_loader(l_tensors, batch_size, num_workers, load_all=False, shuffle=False):
     '''Convert a list of numpy arrays to a torch.DataLoader'''
