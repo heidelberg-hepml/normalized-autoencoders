@@ -6,7 +6,7 @@ from omegaconf import OmegaConf
 import numpy as np
 import torch
 from models import get_model
-from trainers import get_trainer, get_logger
+from trainers import NAETrainer, get_logger
 from loaders import get_dataloader
 from optimizers import get_optimizer
 from datetime import datetime
@@ -41,7 +41,9 @@ def run(cfg, writer):
 
     # Setup Model
     model = get_model(cfg).to(device)
-    trainer = get_trainer(cfg)
+
+    #always use NAE trainer
+    trainer = NAETrainer(cfg['training'], device=device)
     logger = get_logger(cfg, writer)
 
     # Setup optimizer

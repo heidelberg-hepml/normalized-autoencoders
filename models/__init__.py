@@ -86,7 +86,6 @@ def get_net(in_dim, out_dim, **kwargs):
         activation = kwargs["activation"]
         use_spectral_norm = kwargs["spectral_norm"]
         use_dropout = kwargs["dropout"]
-        use_bnorm = kwargs["batch_norm"]
         bias = kwargs["bias"]
         net = DeConvVAE(
                 nh_bln = in_dim,
@@ -96,8 +95,7 @@ def get_net(in_dim, out_dim, **kwargs):
                 activation = activation,
                 use_spectral_norm = use_spectral_norm,
                 use_dropout = use_dropout,
-                use_bnorm = use_bnorm,
-                bias = bias,
+                bias = bias
         )
     elif kwargs["arch"] == "moddeconvae":
         activation = kwargs["activation"]

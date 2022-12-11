@@ -1,78 +1,39 @@
 import numpy as np
 import torch
 import torch.autograd as autograd
+import random
 
 def clip_vector_norm(x, max_norm):
     norm = x.norm(dim=-1, keepdim=True)
     x = x * ((norm < max_norm).to(torch.float) + (norm > max_norm).to(torch.float) * max_norm/norm + 1e-6)
     return x
 
+class SampleBufferV2:
+    def __init__(self, max_samples=10000, replay_ratio=0.95):
+        self.max_samples = max_samples
+        self.buffer = []
+        self.replay_ratio = replay_ratio
 
-def sample_langevin(x, model, stepsize, n_steps, noise_scale=None, intermediate_samples=False,
-                    clip_x=None, clip_grad=None, reject_boundary=False, noise_anneal=None,
-                    spherical=False, mh=False):
-    """Draw samples using Langevin dynamics
-    x: torch.Tensor, initial points
-    model: An energy-based model. returns energy
-    stepsize: float
-    n_steps: integer
-    noise_scale: Optional. float. If None, set to np.sqrt(stepsize * 2)
-    clip_x : tuple (start, end) or None boundary of square domain
-    reject_boundary: Reject out-of-domain samples if True. otherwise clip.
-    """
-    assert not ((stepsize is None) and (noise_scale is None)), 'stepsize and noise_scale cannot be None at the same time'
-    if noise_scale is None:
-        noise_scale = np.sqrt(stepsize * 2)
-    if stepsize is None:
-        stepsize = (noise_scale ** 2) / 2
-    noise_scale_ = noise_scale
+    def __len__(self):
+        return len(self.buffer)
 
-    l_samples = []
-    l_dynamics = []; l_drift = []; l_diffusion = []
-    x.requires_grad = True
-    for i_step in range(n_steps):
-        l_samples.append(x.detach().to('cpu'))
-        noise = torch.randn_like(x) * noise_scale_
-        out = model(x)
-        grad = autograd.grad(out.sum(), x, only_inputs=True)[0]
-        if clip_grad is not None:
-            grad = clip_vector_norm(grad, max_norm=clip_grad)
-        dynamics = - stepsize * grad + noise  # negative!
-        xnew = x + dynamics
-        if clip_x is not None:
-            if reject_boundary:
-                accept = ((xnew >= clip_x[0]) & (xnew <= clip_x[1])).view(len(x), -1).all(dim=1)
-                reject = ~ accept
-                xnew[reject] = x[reject]
-                x = xnew
-            else:
-                x = torch.clamp(xnew, clip_x[0], clip_x[1])
-        else:
-            x = xnew
+    def push(self, samples):
+        samples = samples.detach().to('cpu')
 
-        if spherical:
-            if len(x.shape) == 4:
-                x = x / x.view(len(x), -1).norm(dim=1)[:, None, None ,None]
-            else:
-                x = x / x.norm(dim=1, keepdim=True)
+        for sample in samples:
+            self.buffer.append(sample)
 
-        if noise_anneal is not None:
-            noise_scale_ = noise_scale / (1 + i_step)
+            if len(self.buffer) > self.max_samples:
+                self.buffer.pop(0)
 
-        l_dynamics.append(dynamics.detach().to('cpu'))
-        l_drift.append((- stepsize * grad).detach().cpu())
-        l_diffusion.append(noise.detach().cpu())
-    l_samples.append(x.detach().to('cpu'))
-
-    if intermediate_samples:
-        return l_samples, l_dynamics, l_drift, l_diffusion
-    else:
-        return x.detach()
-
+    def get(self, n_samples):
+        samples = random.choices(self.buffer, k=n_samples)
+        samples = torch.stack(samples, 0)
+        return samples
 
 def sample_langevin_v2(x, model, stepsize, n_steps, noise_scale=None, intermediate_samples=False,
                     clip_x=None, clip_grad=None, reject_boundary=False, noise_anneal=None,
-                    spherical=False, mh=False, temperature=None, norm=False, cut=True):
+                    spherical=False, mh=False, temperature=None, norm=False):
     """Langevin Monte Carlo
     x: torch.Tensor, initial points
     model: An energy-based model. returns energy
@@ -154,8 +115,6 @@ def sample_langevin_v2(x, model, stepsize, n_steps, noise_scale=None, intermedia
         l_diffusion.append(noise.detach().cpu())
         l_samples.append(x.detach().cpu())
     
-    if cut:
-        x = x[x.var(dim=(2,3))>1e-6].view(-1,1,40,40)
     return {'sample': x.detach(), 'l_samples': l_samples, 'l_dynamics': l_dynamics,
             'l_drift': l_drift, 'l_diffusion': l_diffusion, 'l_accept': l_accept}
 

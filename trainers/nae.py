@@ -2,7 +2,6 @@ import os
 import numpy as np
 import time
 from metrics import averageMeter
-from trainers.base import BaseTrainer
 from trainers.logger import BaseLogger
 from optimizers import get_optimizer
 import torch
@@ -12,7 +11,11 @@ from torchvision.utils import make_grid, save_image
 from utils import roc_btw_arr
 
 
-class NAETrainer(BaseTrainer):
+class NAETrainer:
+    def __init__(self, training_cfg, device):
+        self.cfg = training_cfg
+        self.device = device
+    
     def train(self, model, opt, d_dataloaders, logger=None, logdir='', scheduler=None, clip_grad=None):
         cfg = self.cfg
         best_val_loss = np.inf
@@ -157,7 +160,19 @@ class NAETrainer(BaseTrainer):
                 pred = m.predict(x.cuda(device)).detach().cpu()
             l_result.append(pred)
         return torch.cat(l_result)
-
+    
+    def save_model(self, model, logdir, best=False, i_iter=None, i_epoch=None):
+        if best:
+            pkl_name = "model_best.pkl"
+        else:
+            if i_iter is not None:
+                pkl_name = "model_iter_{}.pkl".format(i_iter)
+            else:
+                pkl_name = "model_epoch_{}.pkl".format(i_epoch)
+        state = {"epoch": i_epoch, "model_state": model.state_dict(), 'iter': i_iter}
+        save_path = os.path.join(logdir, pkl_name)
+        torch.save(state, save_path)
+        print(f'Model saved: {pkl_name}')
 
 class NAELogger(BaseLogger):
     def __init__(self, tb_writer):

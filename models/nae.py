@@ -4,8 +4,7 @@ from torch import nn
 from torchvision.utils import make_grid 
 from models.ae import AE
 from models.modules import DummyDistribution
-from models.energybased import SampleBuffer, SampleBufferV2
-from models.langevin import sample_langevin, sample_langevin_v2
+from models.sampling import SampleBufferV2, sample_langevin_v2
 
 class FFEBM(nn.Module):
     """feed-forward energy-based model"""
@@ -13,7 +12,7 @@ class FFEBM(nn.Module):
                  x_bound=None, x_clip_langevin_grad=None, l2_norm_reg=None,
                  buffer_size=10000, replay_ratio=0.95, replay=True, gamma=1, sampling='x',
                  initial_dist='gaussian', temperature=1., temperature_trainable=False,
-                 mh=False, reject_boundary=False, x_norm=False, x_cut=False):
+                 mh=False, reject_boundary=False, x_norm=False):
         super().__init__()
         self.net = net
 
@@ -31,7 +30,6 @@ class FFEBM(nn.Module):
         self.mh = mh
         self.reject_boundary = reject_boundary
         self.x_norm = x_norm
-        self.x_cut = x_cut
 
         self.buffer_size = buffer_size
         self.replay_ratio = replay_ratio
@@ -91,7 +89,7 @@ class FFEBM(nn.Module):
                                         noise_scale=self.x_noise_std,
                                         clip_x=self.x_bound, noise_anneal=self.x_noise_anneal,
                                         clip_grad=self.x_clip_langevin_grad, spherical=False,
-                                        mh=self.mh, temperature=self.temperature, reject_boundary=self.reject_boundary, norm=self.x_norm, cut=self.x_cut)
+                                        mh=self.mh, temperature=self.temperature, reject_boundary=self.reject_boundary, norm=self.x_norm)
         sample_result = d_sample_result['sample']
         if replay:
             self.buffer.push(sample_result)
@@ -184,7 +182,7 @@ class NAE(FFEBM):
                  temperature=1., temperature_trainable=True,
                  initial_dist='gaussian', 
                  mh=False, mh_z=False, reject_boundary=False, reject_boundary_z=False, 
-                 x_norm=False, z_norm=False, x_cut=False, z_cut=False):
+                 x_norm=False, z_norm=False):
         """
         encoder: An encoder network, an instance of nn.Module.
         decoder: A decoder network, an instance of nn.Module.
@@ -234,7 +232,7 @@ class NAE(FFEBM):
                                   buffer_size=buffer_size, replay_ratio=replay_ratio, replay=replay,
                                   gamma=gamma, sampling=sampling, initial_dist=initial_dist,
                                   temperature=temperature, temperature_trainable=temperature_trainable,
-                                  mh=mh, reject_boundary=reject_boundary, x_norm=x_norm, x_cut=x_cut)
+                                  mh=mh, reject_boundary=reject_boundary, x_norm=x_norm)
         self.encoder = encoder
         self.decoder = DummyDistribution(decoder)
         self.z_step = z_step
@@ -245,7 +243,6 @@ class NAE(FFEBM):
         self.mh_z = mh_z
         self.reject_boundary_z = reject_boundary_z
         self.z_norm = z_norm
-        self.z_cut = z_cut
 
         self.z_bound = z_bound
         self.l2_norm_reg = l2_norm_reg  # decoder
@@ -324,7 +321,7 @@ class NAE(FFEBM):
                                              noise_scale=self.z_noise_std,
                                              clip_x=self.z_bound, clip_grad=self.z_clip_langevin_grad,
                                              spherical=self.spherical, mh=self.mh_z,
-                                             temperature=self.temperature, reject_boundary=self.reject_boundary_z, norm=self.z_norm, cut=self.z_cut)
+                                             temperature=self.temperature, reject_boundary=self.reject_boundary_z, norm=self.z_norm)
         sample_z = d_sample_result['sample']
         if replay:
             self.buffer.push(sample_z)

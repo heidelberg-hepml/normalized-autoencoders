@@ -1,10 +1,10 @@
 data:
   indist_train:
     augmentations:
-    batch_size: 128
+    batch_size: 2048
     dataset: JetsIMG
     dequant:
-      GaussianFilter: {}
+      GaussianFilter: {'sigma': 1}
     n_workers: 8
     path: /remote/gpu06/favaro/nae4hep/normalized-autoencoders/datasets/train.img40X40.crop.rot.flip.norm.sig.correct.h5
     shuffle: true
@@ -12,10 +12,10 @@ data:
     split: training
   indist_val:
     augmentations:
-    batch_size: 128
+    batch_size: 2048
     dataset: JetsIMG
     dequant:
-      GaussianFilter: {}
+      GaussianFilter: {'sigma': 1}
     n_workers: 8
     path: /remote/gpu06/favaro/nae4hep/normalized-autoencoders/datasets/train.img40X40.crop.rot.flip.norm.sig.correct.h5
     shuffle: false
@@ -23,11 +23,11 @@ data:
     split: validation
   ood_target:
     augmentations:
-    batch_size: 128
+    batch_size: 2048
     channel: 1
     dataset: JetsIMG
     dequant:
-      GaussianFilter: {}
+      GaussianFilter: {'sigma': 1}
     n_workers: 4
     path: /remote/gpu06/favaro/nae4hep/normalized-autoencoders/datasets/train.img40X40.crop.rot.flip.norm.bkg.correct.h5
     shuffle: false
@@ -35,11 +35,11 @@ data:
     split: evaluation
   ood_val:
     augmentations:
-    batch_size: 128
+    batch_size: 2048
     channel: 1
     dataset: JetsIMG
     dequant:
-      GaussianFilter: {}
+      GaussianFilter: {'sigma': 1}
     n_workers: 4
     path: /remote/gpu06/favaro/nae4hep/normalized-autoencoders/datasets/train.img40X40.crop.rot.flip.norm.bkg.correct.h5
     shuffle: false
@@ -85,7 +85,6 @@ model:
     - 0
     - 1
     x_clip_langevin_grad: 0.01
-    x_cut: false
     x_noise_anneal: 1
     x_noise_std: 0.0001
     x_norm: false
@@ -93,7 +92,6 @@ model:
     x_stepsize: 50
     z_bound: null
     z_clip_langevin_grad: 0.01
-    z_cut: false
     z_noise_anneal: null
     z_noise_std: 0.01
     z_norm: false
@@ -104,7 +102,7 @@ model:
 seed: 1
 trainer: nae
 training:
-  ae_epoch: 80
+  ae_epoch: 500
   ae_lr: 0.001
   fix_D: false
   mh: true

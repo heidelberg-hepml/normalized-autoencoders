@@ -167,24 +167,36 @@ class FCNet(nn.Module):
         return self.net(x)
 
 class ConvVAE(nn.Module):
-    def __init__(self, in_chan=1, nh_bln=32, nh=5, out_activation='PReLU', activation='PReLU', use_spectral_norm=False, use_dropout=False, use_bnorm=False, bias=True):
+    def __init__(self, in_chan=1, nh_bln=32, nh=5, out_activation='PReLU', activation='PReLU', use_spectral_norm=False, use_dropout=False, bias=True, use_bnorm=False):
         super().__init__()
-        self.conv1 = nn.Conv2d(in_chan, nh*2, kernel_size=5, bias=bias, stride=1, padding=2)
-        self.conv2 = nn.Conv2d(nh*2, nh*2, kernel_size=5, bias=bias, stride=2, padding=2)
-        self.conv3 = nn.Conv2d(nh*2, nh, kernel_size=5, bias=bias, stride=1, padding=2)
-        self.conv4 = nn.Conv2d(nh, nh*20, kernel_size=20, bias=bias, stride=1)
-        self.bottleneck = nn.Conv2d(nh*20, nh_bln, kernel_size=1, bias=True, stride=1)
+        self.conv1 = nn.Conv2d(in_chan, nh, kernel_size=3, bias=bias, stride=1, padding=1)
+        self.conv2 = nn.Conv2d(nh, nh, kernel_size=3, bias=bias, stride=1, padding=1)
+        self.conv3 = nn.Conv2d(nh, nh, kernel_size=3, bias=bias, stride=1, padding=1)
+        self.conv4 = nn.Conv2d(nh, nh, kernel_size=3, bias=bias, stride=1, padding=1)
+        self.conv5 = nn.Conv2d(nh, 1, kernel_size=3, bias=bias, stride=1, padding=1)
+
+        self.dense = nn.Linear(20*20, 100, bias=bias)
+        self.bottleneck = nn.Linear(100, nh_bln,bias=bias)
         
+        self.maxpool1 = nn.MaxPool2d(2, stride=2)
+
         if use_spectral_norm:
             self.conv1 = spectral_norm(self.conv1)
             self.conv2 = spectral_norm(self.conv2)
             self.conv3 = spectral_norm(self.conv3)
             self.conv4 = spectral_norm(self.conv4)
+            self.conv5 = spectral_norm(self.conv5)
+            self.dense = spectral_norm(self.dense)
+            self.bottleneck = spectral_norm(self.bottleneck)
         
-        #if use_bnorm:
-        self.bnorm1 = nn.BatchNorm2d(nh*2)
-        self.bnorm2 = nn.BatchNorm2d(nh*2)
-        self.bnorm3 = nn.BatchNorm2d(nh*1)
+        if use_bnorm:
+            self.bnorm1 = nn.BatchNorm2d(nh)
+            self.bnorm2 = nn.BatchNorm2d(nh)
+            self.bnorm3 = nn.BatchNorm2d(nh)
+            self.bnorm4 = nn.BatchNorm2d(nh)
+            self.bnorm5 = nn.BatchNorm2d(1)
+            self.bnorm6 = nn.BatchNorm1d(100)
+            self.bnorm7 = nn.BatchNorm1d(nh_bln)
  
         if use_dropout:
             self.drop1 = nn.Dropout(p=0.1)
@@ -195,29 +207,46 @@ class ConvVAE(nn.Module):
         layers = []
 
         layers.append(self.conv1)
-        layers.append(get_activation(activation))
         if use_bnorm:
             layers.append(self.bnorm1)
+        layers.append(get_activation(activation))
         if use_dropout:
             layers.append(self.drop1)
         layers.append(self.conv2)
-        layers.append(get_activation(activation))
         if use_bnorm:
             layers.append(self.bnorm2)
+        layers.append(get_activation(activation))
         if use_dropout:
             layers.append(self.drop2)
-        layers.append(self.conv3)
+        layers.append(self.maxpool1)
         layers.append(get_activation(activation))
+        layers.append(self.conv3)
         if use_bnorm:
             layers.append(self.bnorm3)
+        layers.append(get_activation(activation))
         if use_dropout:
             layers.append(self.drop3)
         layers.append(self.conv4)
+        if use_bnorm:
+            layers.append(self.bnorm4)
         layers.append(get_activation(activation))
+        layers.append(self.conv5)
+        if use_bnorm:
+            layers.append(self.bnorm5)
+        layers.append(get_activation(activation))
+
+        layers.append(nn.Flatten())
+        layers.append(self.dense)
+        if use_bnorm:
+            layers.append(self.bnorm6)
+        layers.append(get_activation(activation))
+
         if use_dropout:
             layers.append(self.drop4)
         layers.append(self.bottleneck)
-
+        if use_bnorm:
+            layers.append(self.bnorm7)
+ 
         if get_activation(out_activation) is not None:
             layers.append(get_activation(out_activation))
 
@@ -227,24 +256,27 @@ class ConvVAE(nn.Module):
         return self.net(x)
 
 class DeConvVAE(nn.Module):
-    def __init__(self, nh_bln=32, out_chan=1, nh=5, out_activation='PReLU', activation='PReLU', use_spectral_norm=False, use_dropout=False, use_bnorm=False, bias=True):
+    def __init__(self, nh_bln=32, out_chan=1, nh=5, out_activation='PReLU', activation='PReLU', use_spectral_norm=False, use_dropout=False, bias=True):
         super().__init__()
-        self.deconv1 = nn.ConvTranspose2d(nh_bln, nh*20, kernel_size=1, bias=bias, stride=1)
-        self.deconv2 = nn.ConvTranspose2d(nh*20, nh, kernel_size=20, bias=bias, stride=1)
-        self.deconv3 = nn.ConvTranspose2d(nh, nh*2, kernel_size=5, bias=bias, stride=2, padding=2, output_padding=1)
-        self.deconv4 = nn.ConvTranspose2d(nh*2, nh*2, kernel_size=5, bias=bias, stride=1, padding=2)
-        self.out = nn.ConvTranspose2d(nh*2, out_chan, kernel_size=5, bias=True, stride=1, padding=2)
 
+        self.dense1 = nn.Linear(nh_bln, 100, bias=True)
+        self.dense2 = nn.Linear(100, 20*20, bias=bias)
+        self.deconv1 = nn.ConvTranspose2d(1, nh, kernel_size=3, bias=bias, stride=1, padding=1)
+        self.deconv2 = nn.ConvTranspose2d(nh, nh, kernel_size=3, bias=bias, stride=1, padding=1)
+        self.deconv3 = nn.ConvTranspose2d(nh, nh, kernel_size=3, bias=bias, stride=1, padding=1)
+        self.out = nn.ConvTranspose2d(nh, out_chan, kernel_size=3, bias=bias, stride=1, padding=1)
+        self.out_activation = get_activation(out_activation)
+
+        self.up1 = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False)
+ 
         if use_spectral_norm:
             self.deconv1 = spectral_norm(self.deconv1)
             self.deconv2 = spectral_norm(self.deconv2)
             self.deconv3 = spectral_norm(self.deconv3)
-            self.deconv4 = spectral_norm(self.deconv4)
-        
-        self.bnorm2 = nn.BatchNorm2d(nh*1)
-        self.bnorm3 = nn.BatchNorm2d(nh*2)
-        self.bnorm4 = nn.BatchNorm2d(nh*2)
- 
+            self.out = spectral_norm(self.out)
+            self.dense1 = spectral_norm(self.dense1)
+            self.dense2 = spectral_norm(self.dense2)
+
         if use_dropout:
             self.drop1 = nn.Dropout(p=0.1)
             self.drop2 = nn.Dropout(p=0.1)
@@ -253,32 +285,37 @@ class DeConvVAE(nn.Module):
 
         layers = []
 
-        layers.append(self.deconv1)
+        layers.append(self.dense1)
         layers.append(get_activation(activation))
         if use_dropout:
             layers.append(self.drop1)
-        layers.append(self.deconv2)
+        layers.append(self.dense2)
         layers.append(get_activation(activation))
-        if use_bnorm:
-            layers.append(self.bnorm2)
         if use_dropout:
             layers.append(self.drop2)
-        layers.append(self.deconv3)
+        layers.append(View([-1, 1, 20, 20]))
+        layers.append(self.deconv1)
         layers.append(get_activation(activation))
-        if use_bnorm:
-            layers.append(self.bnorm3)
         if use_dropout:
             layers.append(self.drop3)
-        layers.append(self.deconv4)
+        layers.append(self.deconv2)
         layers.append(get_activation(activation))
-        if use_bnorm:
-            layers.append(self.bnorm4)
         if use_dropout:
             layers.append(self.drop4)
-        layers.append(self.out)
         
-        if get_activation(out_activation) is not None:
-            layers.append(get_activation(out_activation))
+        layers.append(self.up1)
+        layers.append(get_activation(activation))
+
+        layers.append(self.deconv3)
+        layers.append(get_activation(activation))
+        layers.append(self.out) 
+        if self.out_activation is not None:
+             if self.out_activation is 'softmax':
+                layers.append(nn.Flatten())
+                layers.append(self.out_activation)
+                layers.append(View((-1, 1, 40, 40)))
+             else:
+                layers.append(self.out_activation)
 
         self.net = nn.Sequential(*layers)
 

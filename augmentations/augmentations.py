@@ -12,20 +12,22 @@ class UniformDequantize:
         return img
 
 class Reweight:
-    def __init__(self):
+    def __init__(self, n=1):
+        self.n = n
         pass
 
     def __call__(self, img):
-        img = img**0.01
-        return img
+        img = img**self.n
+        return img/img.sum()
 
 class GaussianFilter:
-    def __init__(self):
+    def __init__(self, sigma):
+        self.sigma = sigma
         pass
 
     def __call__(self, img):
-        for i in (0,1):
-            img = gaussian_filter1d(img, 1, axis=i)
+        for i in (1,2):
+            img = gaussian_filter1d(img, self.sigma, axis=i)
         return img
 
 class GaussianDequantize:
