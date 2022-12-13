@@ -1,52 +1,56 @@
 data:
   indist_train:
     augmentations:
-    batch_size: 128
+      Reweight: {}
+    batch_size: 2048
     dataset: JetsIMG
     dequant:
-      GaussianFilter: {'sigma': 1}
+      GaussianFilter: {}
     n_workers: 8
-    path: /remote/gpu06/favaro/nae4hep/normalized-autoencoders/datasets/train.img40X40.crop.rot.flip.norm.sig.correct.h5
+    path: /remote/gpu06/favaro/nae4hep/normalized-autoencoders/datasets/train.img40X40.crop.rot.flip.norm.bkg.correct.h5
     shuffle: true
     size: 40
     split: training
   indist_val:
     augmentations:
-    batch_size: 128
+      Reweight: {}
+    batch_size: 2048
     dataset: JetsIMG
     dequant:
-      GaussianFilter: {'sigma': 1}
+      GaussianFilter: {}
     n_workers: 8
-    path: /remote/gpu06/favaro/nae4hep/normalized-autoencoders/datasets/train.img40X40.crop.rot.flip.norm.sig.correct.h5
+    path: /remote/gpu06/favaro/nae4hep/normalized-autoencoders/datasets/train.img40X40.crop.rot.flip.norm.bkg.correct.h5
     shuffle: false
     size: 40
     split: validation
   ood_target:
     augmentations:
-    batch_size: 128
+      Reweight: {}
+    batch_size: 2048
     channel: 1
     dataset: JetsIMG
     dequant:
-      GaussianFilter: {'sigma': 1}
+      GaussianFilter: {}
     n_workers: 4
-    path: /remote/gpu06/favaro/nae4hep/normalized-autoencoders/datasets/train.img40X40.crop.rot.flip.norm.bkg.correct.h5
+    path: /remote/gpu06/favaro/nae4hep/normalized-autoencoders/datasets/train.img40X40.crop.rot.flip.norm.sig.correct.h5
     shuffle: false
     size: 40
     split: evaluation
   ood_val:
     augmentations:
-    batch_size: 128
+      Reweight: {}
+    batch_size: 2048
     channel: 1
     dataset: JetsIMG
     dequant:
-      GaussianFilter: {'sigma': 1}
+      GaussianFilter: {}
     n_workers: 4
-    path: /remote/gpu06/favaro/nae4hep/normalized-autoencoders/datasets/train.img40X40.crop.rot.flip.norm.bkg.correct.h5
+    path: /remote/gpu06/favaro/nae4hep/normalized-autoencoders/datasets/train.img40X40.crop.rot.flip.norm.sig.correct.h5
     shuffle: false
     size: 40
     split: validation
 device: cuda:0
-id: qcd_m4
+id: top_1
 logger: nae
 model:
   arch: nae
@@ -70,11 +74,12 @@ model:
     out_activation: linear
     spectral_norm: true
   nae:
+    ann_temp: false
     buffer_size: 10000
     gamma: 1
     initial_dist: gaussian
     l2_norm_reg: 1.0e-08
-    l2_norm_reg_en: 1.0e-08
+    l2_norm_reg_en: 1.0e-09
     replay: true
     replay_ratio: 0.95
     sampling: on_manifold
@@ -85,6 +90,7 @@ model:
     - 0
     - 1
     x_clip_langevin_grad: 0.01
+    x_cut: false
     x_noise_anneal: 1
     x_noise_std: 0.0001
     x_norm: false
@@ -92,6 +98,7 @@ model:
     x_stepsize: 50
     z_bound: null
     z_clip_langevin_grad: 0.01
+    z_cut: false
     z_noise_anneal: null
     z_noise_std: 0.01
     z_norm: false
@@ -102,15 +109,14 @@ model:
 seed: 1
 trainer: nae
 training:
-  ae_epoch: 500
+  ae_epoch: 400
   ae_lr: 0.001
   fix_D: false
   mh: true
   mh_z: true
-  nae_epoch: 60
+  nae_epoch: 300
   nae_lr: 1.0e-05
   print_interval: 200
   save_interval: 2000
   temperature_lr: 0.001
   val_interval: 200
-  load_ae: /remote/gpu06/favaro/nae4hep/fvr_nae4hep/normalized-autoencoders/pretrained/gf1_convae_zdim3/model_best.pkl
