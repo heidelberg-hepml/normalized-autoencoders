@@ -281,3 +281,21 @@ def parse_nested_args(d_cmd_cfg):
                     d[each_key] = {}
                 d = d[each_key]
     return d_new_cfg
+
+class averageMeter(object):
+    """Computes and stores the average and current value"""
+
+    def __init__(self):
+        self.reset()
+
+    def reset(self):
+        self.val = 0
+        self.avg = 0
+        self.sum = 0
+        self.count = 0
+
+    def update(self, val, n=1):
+        self.val = val
+        self.sum += val * n
+        self.count += n
+        self.avg = self.sum / self.count

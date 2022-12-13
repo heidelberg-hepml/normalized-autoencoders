@@ -1,6 +1,5 @@
 import numpy as np
-from metrics import averageMeter
-
+from utils import averageMeter
 
 class BaseLogger:
     """BaseLogger that can handle most of the logging

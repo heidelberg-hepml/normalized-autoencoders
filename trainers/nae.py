@@ -1,7 +1,6 @@
 import os
 import numpy as np
 import time
-from metrics import averageMeter
 from trainers.logger import BaseLogger
 from optimizers import get_optimizer
 import torch
@@ -9,6 +8,7 @@ from torch.optim import Adam
 from tqdm import tqdm
 from torchvision.utils import make_grid, save_image
 from utils import roc_btw_arr
+from utils import averageMeter
 
 
 class NAETrainer:
