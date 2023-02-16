@@ -32,7 +32,7 @@ class SampleBufferV2:
         return samples
 
 def sample_langevin_v2(x, model, stepsize, n_steps, noise_scale=None, intermediate_samples=False,
-                    clip_x=None, clip_grad=None, reject_boundary=False, noise_anneal=None,
+                    clip_x=None, clip_grad=None, reject_boundary=False, noise_anneal=None, noise_anneal_full=None,
                     spherical=False, mh=False, temperature=None, norm=False):
     """Langevin Monte Carlo
     x: torch.Tensor, initial points
@@ -109,6 +109,10 @@ def sample_langevin_v2(x, model, stepsize, n_steps, noise_scale=None, intermedia
 
         if noise_anneal is not None:
             noise_scale_ = noise_scale / (1 + i_step)
+
+        if noise_anneal_full is not None:
+            noise_scale_ = noise_scale / np.sqrt(1 + i_step)
+            stepsize_ = stepsize / (1 + i_step)
 
         l_dynamics.append(dynamics.detach().cpu())
         l_drift.append((- stepsize * grad_E_x).detach().cpu())
