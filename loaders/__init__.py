@@ -58,8 +58,8 @@ def get_dataset(data_dict, split_type=None, data_aug=None, dequant=None):
     # default tranform behavior. 
     original_data_aug = data_aug
     if data_aug is not None:
-        data_aug = Compose([data_aug, ToTensor()])
-        #data_aug = Compose([ToTensor(), data_aug])
+        #data_aug = Compose([data_aug, ToTensor()])
+        data_aug = Compose([ToTensor(), data_aug])
     else:
         data_aug = ToTensor()
 

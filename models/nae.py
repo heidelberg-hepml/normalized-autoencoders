@@ -9,7 +9,7 @@ from models.sampling import SampleBufferV2, sample_langevin_v2
 class FFEBM(nn.Module):
     """feed-forward energy-based model"""
     def __init__(self, net, x_step=None, x_stepsize=None, x_noise_std=None, x_noise_anneal=None,
-                 x_bound=None, x_clip_langevin_grad=None, l2_norm_reg=None,
+                 x_noise_anneal_full=None, x_bound=None, x_clip_langevin_grad=None, l2_norm_reg=None,
                  buffer_size=10000, replay_ratio=0.95, replay=True, gamma=1, sampling='x',
                  initial_dist='gaussian', temperature=1., temperature_trainable=False,
                  mh=False, reject_boundary=False, x_norm=False):
@@ -25,6 +25,7 @@ class FFEBM(nn.Module):
         self.x_stepsize = x_stepsize
         self.x_noise_std = x_noise_std
         self.x_noise_anneal = x_noise_anneal
+        self.x_noise_anneal_full = x_noise_anneal_full
         self.x_bound = x_bound
         self.x_clip_langevin_grad = x_clip_langevin_grad
         self.mh = mh
@@ -88,6 +89,7 @@ class FFEBM(nn.Module):
         d_sample_result = sample_langevin_v2(x0.detach(), self.energy, stepsize=self.x_stepsize, n_steps=self.x_step,
                                         noise_scale=self.x_noise_std,
                                         clip_x=self.x_bound, noise_anneal=self.x_noise_anneal,
+                                        noise_anneal_full=self.x_noise_anneal_full,
                                         clip_grad=self.x_clip_langevin_grad, spherical=False,
                                         mh=self.mh, temperature=self.temperature, reject_boundary=self.reject_boundary, norm=self.x_norm)
         sample_result = d_sample_result['sample']
@@ -172,8 +174,8 @@ class FFEBM(nn.Module):
 class NAE(FFEBM):
     """Normalized Autoencoder"""
     def __init__(self, encoder, decoder,
-                 z_step=50, z_stepsize=0.2, z_noise_std=0.2, z_noise_anneal=None,
-                 x_step=50, x_stepsize=10, x_noise_std=0.05, x_noise_anneal=None,
+                 z_step=50, z_stepsize=0.2, z_noise_std=0.2, z_noise_anneal=None, z_noise_anneal_full=None,
+                 x_step=50, x_stepsize=10, x_noise_std=0.05, x_noise_anneal=None, x_noise_anneal_full=None,
                  x_bound=(0, 1), z_bound=None,
                  z_clip_langevin_grad=None, x_clip_langevin_grad=None, 
                  l2_norm_reg=None, l2_norm_reg_en=None, spherical=True, z_norm_reg=None,
@@ -227,7 +229,8 @@ class NAE(FFEBM):
 
         """
         super(NAE, self).__init__(net=None, x_step=x_step, x_stepsize=x_stepsize, x_noise_std=x_noise_std,
-                                  x_noise_anneal=x_noise_anneal, x_bound=x_bound,
+                                  x_noise_anneal=x_noise_anneal, x_noise_anneal_full=x_noise_anneal_full,
+                                  x_bound=x_bound,
                                   x_clip_langevin_grad=x_clip_langevin_grad, l2_norm_reg=l2_norm_reg,
                                   buffer_size=buffer_size, replay_ratio=replay_ratio, replay=replay,
                                   gamma=gamma, sampling=sampling, initial_dist=initial_dist,
@@ -239,6 +242,7 @@ class NAE(FFEBM):
         self.z_stepsize = z_stepsize
         self.z_noise_std = z_noise_std
         self.z_noise_anneal = z_noise_anneal
+        self.z_noise_anneal_full = z_noise_anneal_full
         self.z_clip_langevin_grad = z_clip_langevin_grad
         self.mh_z = mh_z
         self.reject_boundary_z = reject_boundary_z
@@ -318,7 +322,8 @@ class NAE(FFEBM):
             z0 = self.initial_sample(n_sample, device)
         energy = lambda z: self.energy(self.decoder(z))
         d_sample_result = sample_langevin_v2(z0, energy, stepsize=self.z_stepsize, n_steps=self.z_step,
-                                             noise_scale=self.z_noise_std,
+                                             noise_scale=self.z_noise_std, noise_anneal=self.z_noise_anneal,
+                                             noise_anneal_full=self.z_noise_anneal_full,
                                              clip_x=self.z_bound, clip_grad=self.z_clip_langevin_grad,
                                              spherical=self.spherical, mh=self.mh_z,
                                              temperature=self.temperature, reject_boundary=self.reject_boundary_z, norm=self.z_norm)

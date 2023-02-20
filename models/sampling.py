@@ -110,7 +110,7 @@ def sample_langevin_v2(x, model, stepsize, n_steps, noise_scale=None, intermedia
         if noise_anneal is not None:
             noise_scale_ = noise_scale / (1 + i_step)
 
-        if noise_anneal_full is not None:
+        elif noise_anneal_full is not None:
             noise_scale_ = noise_scale / np.sqrt(1 + i_step)
             stepsize_ = stepsize / (1 + i_step)
 

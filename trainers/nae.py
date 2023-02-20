@@ -7,7 +7,7 @@ import torch
 from torch.optim import Adam
 from tqdm import tqdm
 from torchvision.utils import make_grid, save_image
-from utils import roc_btw_arr
+from utils import roc_btw_arr, signal_eff
 from utils import averageMeter
 
 
@@ -126,7 +126,10 @@ class NAETrainer:
                     auc_val = roc_btw_arr(ood1_pred, in_pred)
                     ood2_pred = self.predict(model, oodtarget_val_loader, self.device)
                     auc_target = roc_btw_arr(ood2_pred, in_pred)
-                    d_result = {'nae/auc_val': auc_val, 'nae/auc_target': auc_target}
+                    eff1 = signal_eff(ood1_pred, in_pred)
+                    eff2 = signal_eff(ood2_pred, in_pred)
+                    d_result = {'nae/auc_val': auc_val, 'nae/auc_target': auc_target, 'nae/sig_eff_val_03': eff1, 'nae/sig_eff_target_03': eff2}
+
                     print(logger.summary_val_nae(i, d_result))
                     torch.save({'model_state': model.state_dict()}, f'{logdir}/nae_iter_{i}.pkl')
 
